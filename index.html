@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universe Simulator — Explorador de Física Espacial</title>
+  <meta name="description" content="Simulador interactivo de física gravitacional. Explora el Sistema Solar, agujeros negros, binarias estelares y más." />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- PixiJS v7 WebGL renderer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.2/pixi.min.js"></script>
+  <!-- pixi-filters (GlowFilter, BloomFilter) -->
+  <script src="https://cdn.jsdelivr.net/npm/pixi-filters@5.2.1/dist/browser/pixi-filters.js"></script>
+</head>
+<body>
+
+<!-- PixiJS renders here -->
+<canvas id="sim-canvas"></canvas>
+
+<!-- Zoom indicator -->
+<div id="zoom-indicator">zoom: 1x</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     UI ROOT
+═══════════════════════════════════════════════════════════ -->
+<div id="ui-root">
+
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-icon">🌌</span>
+      <div>
+        Universe Simulator
+        <span class="brand-sub">Explorador de Física Espacial</span>
+      </div>
+    </div>
+
+    <div class="topbar-divider"></div>
+
+    <!-- Scenario selector dropdown -->
+    <div class="scenario-wrapper">
+      <button id="scenario-btn">
+        <span>Escenario:</span>
+        <strong id="scenario-title">Sistema Solar</strong>
+        <span class="dropdown-arrow">▾</span>
+      </button>
+      <ul id="scenario-menu"></ul>
+    </div>
+
+    <div class="topbar-divider"></div>
+
+    <!-- View toggle buttons -->
+    <div class="toolbar-group">
+      <button class="tool-btn active" id="btn-trails"  title="Mostrar/ocultar trayectorias">
+        〰 Trayectorias
+      </button>
+      <button class="tool-btn active" id="btn-labels"  title="Mostrar/ocultar etiquetas">
+        🏷 Etiquetas
+      </button>
+      <button class="tool-btn"        id="btn-vectors" title="Mostrar vectores de velocidad">
+        ↗ Vectores
+      </button>
+      <button class="tool-btn"        id="btn-fit"     title="Ajustar vista a todos los objetos">
+        ⊡ Encuadrar
+      </button>
+      <div class="topbar-divider"></div>
+      <button class="tool-btn"        id="btn-restart" title="Reiniciar el escenario actual">
+        🔄 Reiniciar
+      </button>
+      <button class="tool-btn"        id="btn-clear"   title="Vaciar el espacio">
+        🗑️ Vaciar
+      </button>
+    </div>
+  </header>
+
+  <!-- LEFT SIDEBAR — Object List -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h3>Objetos</h3>
+      <span id="body-count">0 objetos</span>
+    </div>
+    <div id="body-list"></div>
+    <div class="sidebar-footer">
+      <button class="tool-btn primary" id="btn-add" style="pointer-events:all">
+        ＋ Agregar Objeto
+      </button>
+    </div>
+  </aside>
+
+  <!-- CENTER — canvas passthrough (no UI here) -->
+  <main style="grid-area:canvas; pointer-events:none;"></main>
+
+  <!-- RIGHT PANEL — Body Properties -->
+  <aside id="prop-panel" class="hidden">
+    <div class="prop-header">
+      <h3>Propiedades</h3>
+      <button class="icon-btn" id="prop-close" title="Cerrar">✕</button>
+    </div>
+    <div class="prop-body">
+
+      <!-- Live stats -->
+      <div class="prop-stats">
+        <div class="stat-card">
+          <div class="stat-label">Velocidad</div>
+          <div class="stat-value" id="prop-speed">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Distancia al origen</div>
+          <div class="stat-value" id="prop-dist">—</div>
+        </div>
+      </div>
+
+      <!-- Identity -->
+      <div class="prop-section">
+        <div class="prop-section-label">Identidad</div>
+        <div class="form-row">
+          <label for="prop-name">Nombre</label>
+          <input class="form-input" id="prop-name" type="text" />
+        </div>
+        <div class="form-row">
+          <label for="prop-type">Tipo</label>
+          <select class="form-select" id="prop-type">
+            <option value="STAR">Estrella</option>
+            <option value="PLANET">Planeta</option>
+            <option value="GAS_GIANT">Gigante Gaseoso</option>
+            <option value="MOON">Luna</option>
+            <option value="ASTEROID">Asteroide</option>
+            <option value="BLACK_HOLE">Agujero Negro</option>
+            <option value="NEUTRON_STAR">Estrella de Neutrones</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Physics -->
+      <div class="prop-section">
+        <div class="prop-section-label">Física</div>
+        <div class="form-row">
+          <label for="prop-mass">Masa (M☉)</label>
+          <input class="form-input" id="prop-mass" type="number" step="any" />
+          <div class="mass-display" id="prop-mass-display">—</div>
+        </div>
+        <div class="form-row-2col">
+          <div class="form-row">
+            <label for="prop-vx">Vel. X (AU/s)</label>
+            <input class="form-input" id="prop-vx" type="number" step="any" />
+          </div>
+          <div class="form-row">
+            <label for="prop-vy">Vel. Y (AU/s)</label>
+            <input class="form-input" id="prop-vy" type="number" step="any" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="prop-section">
+        <div class="prop-section-label">Apariencia</div>
+        <div class="color-row">
+          <label for="prop-color" style="font-size:11px;color:var(--text-dim)">Color</label>
+          <input type="color" id="prop-color" />
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="prop-actions">
+        <button class="btn btn-primary" id="prop-apply">Aplicar Cambios</button>
+        <button class="btn btn-secondary" id="prop-follow">📍 Seguir</button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- BOTTOM BAR — Time Controls -->
+  <footer id="bottom-bar">
+    <div class="time-controls">
+      <button class="time-btn" id="btn-slower" title="Reducir velocidad">⏪</button>
+      <button class="time-btn" id="btn-play-pause" title="Pausar / Reanudar (Espacio)">⏸</button>
+      <button class="time-btn" id="btn-faster" title="Aumentar velocidad">⏩</button>
+      <select id="time-scale-select" title="Escala de tiempo"></select>
+    </div>
+
+    <div class="time-info">
+      <div class="time-label">Tiempo simulado</div>
+      <div id="sim-time">0 s</div>
+    </div>
+
+    <div class="bottom-hint">
+      <div class="hint-item"><kbd>Espacio</kbd> Pausar</div>
+      <div class="hint-item"><kbd>Scroll</kbd> Zoom</div>
+      <div class="hint-item"><kbd>Drag</kbd> Mover vista</div>
+      <div class="hint-item"><kbd>2× Click</kbd> Seguir objeto</div>
+      <div class="hint-item"><kbd>Click</kbd> Seleccionar</div>
+    </div>
+  </footer>
+
+</div><!-- /ui-root -->
+
+<!-- ADD BODY MODAL -->
+<div class="modal-overlay hidden" id="add-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h2><span>➕</span> Agregar Objeto Celeste</h2>
+    <div class="modal-grid">
+      <div class="form-row span-2">
+        <label for="add-name">Nombre</label>
+        <input class="form-input" id="add-name" type="text" placeholder="Nombre del objeto" />
+      </div>
+      <div class="form-row">
+        <label for="add-type">Tipo</label>
+        <select class="form-select" id="add-type"></select>
+      </div>
+      <div class="form-row">
+        <label for="add-mass">Masa (M☉)</label>
+        <input class="form-input" id="add-mass" type="number" step="any" />
+      </div>
+      <div class="form-row span-2">
+        <label for="add-method">Método de Inserción</label>
+        <select class="form-select" id="add-method">
+          <option value="drop">📍 Punto estático (Soltar)</option>
+          <option value="orbit">💫 Órbita automática</option>
+          <option value="launch">🏹 Tirachinas (Arrastrar vector)</option>
+        </select>
+      </div>
+      <div class="form-row color-row" style="align-items:flex-end;gap:12px;">
+        <label for="add-color">Color</label>
+        <input type="color" id="add-color" value="#4488ff" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary"   id="add-confirm">Apuntar y Colocar</button>
+      <button class="btn btn-secondary" id="add-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS Modules (load order matters) -->
+<script src="js/constants.js"></script>
+<script src="js/body.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/simulation.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Zoom indicator updater -->
+<script>
+  setInterval(() => {
+    const z = Camera.zoom;
+    const label = z >= 1000 ? (z/1000).toFixed(1) + 'k' : z.toFixed(1);
+    document.getElementById('zoom-indicator').textContent = 'zoom: ' + label + 'x · ' + (1/z * AU_TO_KM).toExponential(2) + ' km/px';
+  }, 200);
+</script>
+
+</body>
+</html>
