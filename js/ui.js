@@ -14,21 +14,36 @@ const UI = (() => {
   // ── Build UI ──────────────────────────────────────────────
 
   function init() {
-    _buildScenarioDropdown();
+    _bindScenarioDropdown();
     _bindTimeControls();
     _bindToolbarButtons();
     _bindAddBodyModal();
     _bindCanvasEvents();
     _bindKeyboard();
+    _bindModeToggle();
+    _bindGlobalSettings();
+    _bindPropertyPanel();
     Simulation.onBodyChange(_refreshBodyList);
   }
 
   // ── Scenario Dropdown ─────────────────────────────────────
 
-  function _buildScenarioDropdown() {
+  function _bindScenarioDropdown() {
+    _rebuildScenarioDropdown();
+    document.getElementById('scenario-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('scenario-menu').classList.toggle('open');
+    });
+    document.addEventListener('click', () => document.getElementById('scenario-menu').classList.remove('open'));
+  }
+
+  function _rebuildScenarioDropdown() {
     const menu = document.getElementById('scenario-menu');
-    for (const key of SCENARIO_LIST) {
+    menu.innerHTML = '';
+    const keys = Simulation.mode === 'ATOMIC' ? ATOMIC_SCENARIOS : COSMIC_SCENARIOS;
+    for (const key of keys) {
       const s = Scenarios[key];
+      if (!s) continue;
       const li = document.createElement('li');
       li.dataset.key = key;
       li.innerHTML = `<span class="scenario-icon">${_scenarioIcon(key)}</span> ${s.name}`;
@@ -38,12 +53,6 @@ const UI = (() => {
       });
       menu.appendChild(li);
     }
-
-    document.getElementById('scenario-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.classList.toggle('open');
-    });
-    document.addEventListener('click', () => menu.classList.remove('open'));
   }
 
   function _scenarioIcon(key) {
@@ -52,6 +61,8 @@ const UI = (() => {
       blackHole: '🕳️', asteroidImpact: '☄️', slingshot: '🚀',
       chaos: '🌀', figure8: '♾️', rogueStar: '🌠',
       galaxyCollision: '💥', hereYouAre: '📍', empty: '✨',
+      hydrogen: '⚛️', helium: '🎈', hydrogenMolecule: '🧬',
+      nuclearFusion: '🔥', quarkPlasma: '🌀'
     };
     return icons[key] || '🌌';
   }
@@ -60,6 +71,20 @@ const UI = (() => {
     const s = Simulation.loadScenario(key);
     if (!s) return;
     document.getElementById('scenario-title').textContent = s.name;
+    
+    // Sync mode button classes
+    const cosmicBtn = document.getElementById('btn-mode-cosmic');
+    const atomicBtn = document.getElementById('btn-mode-atomic');
+    if (Simulation.mode === 'ATOMIC') {
+      atomicBtn.classList.add('active');
+      cosmicBtn.classList.remove('active');
+    } else {
+      cosmicBtn.classList.add('active');
+      atomicBtn.classList.remove('active');
+    }
+    
+    _rebuildScenarioDropdown();
+
     // Sync time scale selector
     const sel = document.getElementById('time-scale-select');
     // Find closest
@@ -136,23 +161,43 @@ const UI = (() => {
     const prev = Simulation.bodies.find(b => b.id === _selectedBodyId);
     if (prev) prev.selected = false;
     _selectedBodyId = null;
-    _hidePropertyPanel();
+    _showGlobalSettings();
   }
 
   // ── Property Panel ────────────────────────────────────────
 
   function _showPropertyPanel(body) {
-    if (!body) { _hidePropertyPanel(); return; }
+    if (!body) { _showGlobalSettings(); return; }
+    
+    document.getElementById('prop-body-selected').classList.remove('hidden');
+    document.getElementById('prop-body-global').classList.add('hidden');
     const panel = document.getElementById('prop-panel');
     panel.classList.remove('hidden');
 
+    document.getElementById('prop-panel-title').textContent = 'Propiedades';
     document.getElementById('prop-name').value = body.name;
-    document.getElementById('prop-type').value = body.type;
+    
+    const typeSel = document.getElementById('prop-type');
+    _buildTypeOptions(typeSel);
+    typeSel.value = body.type;
+    
     document.getElementById('prop-mass').value = body.mass;
-    document.getElementById('prop-mass-display').textContent = _formatMass(body.mass);
+    document.getElementById('prop-mass-display').textContent = _formatMass(body.mass, body.type);
     document.getElementById('prop-vx').value = body.vx.toExponential(4);
     document.getElementById('prop-vy').value = body.vy.toExponential(4);
     document.getElementById('prop-color').value = '#' + body.color.toString(16).padStart(6, '0');
+
+    // Show/hide charge configuration row
+    const chargeRow = document.getElementById('prop-charge-row');
+    if (Simulation.mode === 'ATOMIC') {
+      chargeRow.classList.remove('hidden');
+      document.getElementById('prop-charge').value = body.charge;
+      document.getElementById('prop-charge-display').textContent = (body.charge >= 0 ? '+' : '') + body.charge.toFixed(2) + ' e';
+      document.getElementById('label-prop-mass').textContent = 'Masa (m_p)';
+    } else {
+      chargeRow.classList.add('hidden');
+      document.getElementById('label-prop-mass').textContent = 'Masa (M☉)';
+    }
 
     const info = body.displayInfo();
     document.getElementById('prop-speed').textContent = info.speedKms;
@@ -163,7 +208,10 @@ const UI = (() => {
     document.getElementById('prop-panel').classList.add('hidden');
   }
 
-  function _formatMass(m) {
+  function _formatMass(m, type) {
+    if (Simulation.mode === 'ATOMIC') {
+      return m.toFixed(5) + ' m_p';
+    }
     if (m >= 0.01)   return m.toFixed(4) + ' M☉';
     const earth = m * MSUN / 5.972e24;
     if (earth >= 0.01) return earth.toFixed(3) + ' M⊕';
@@ -182,7 +230,13 @@ const UI = (() => {
       const vy     = parseFloat(document.getElementById('prop-vy').value);
       const colorH = document.getElementById('prop-color').value;
       const color  = parseInt(colorH.slice(1), 16);
-      Simulation.updateBody(_selectedBodyId, { name, type, mass, vx, vy, color });
+      
+      const opts = { name, type, mass, vx, vy, color };
+      if (Simulation.mode === 'ATOMIC') {
+        opts.charge = parseFloat(document.getElementById('prop-charge').value);
+      }
+      
+      Simulation.updateBody(_selectedBodyId, opts);
       _showPropertyPanel(Simulation.bodies.find(b => b.id === _selectedBodyId));
       _refreshBodyList();
     });
@@ -192,11 +246,22 @@ const UI = (() => {
       if (body) Camera.setFollow(body);
     });
 
-    document.getElementById('prop-close').addEventListener('click', _deselectBody);
+    document.getElementById('prop-close').addEventListener('click', () => {
+      if (_selectedBodyId !== null) {
+        _deselectBody();
+      } else {
+        _hidePropertyPanel();
+      }
+    });
 
     document.getElementById('prop-mass').addEventListener('input', (e) => {
       const m = parseFloat(e.target.value) || 0;
       document.getElementById('prop-mass-display').textContent = _formatMass(m);
+    });
+
+    document.getElementById('prop-charge')?.addEventListener('input', (e) => {
+      const c = parseFloat(e.target.value) || 0;
+      document.getElementById('prop-charge-display').textContent = (c >= 0 ? '+' : '') + c.toFixed(2) + ' e';
     });
   }
 
@@ -404,7 +469,20 @@ const UI = (() => {
             const dy = world.y - heaviest.y;
             const r = Math.hypot(dx, dy);
             if (r > 0) {
-              const v = Math.sqrt(G_SIM * heaviest.mass / r);
+              let v = 0;
+              if (Simulation.mode === 'ATOMIC') {
+                const particleMass = _placementConfig.mass;
+                const particleCharge = _placementConfig.charge;
+                const qProduct = Math.abs(heaviest.charge * particleCharge);
+                // Orbit requires attraction (opposite signs for charges)
+                if (qProduct > 0 && (heaviest.charge * particleCharge < 0)) {
+                  v = Math.sqrt(Simulation.coulombK * qProduct / (particleMass * r));
+                } else {
+                  v = 0; // repulsive or neutral force cannot sustain standard circular orbit
+                }
+              } else {
+                v = Math.sqrt(G_SIM * heaviest.mass / r);
+              }
               vx = heaviest.vx - v * (dy / r);
               vy = heaviest.vy + v * (dx / r);
             }
@@ -485,11 +563,129 @@ const UI = (() => {
     _refreshBodyList();
   }
 
+  // ── Mode Toggle and Custom Settings ───────────────────────
+
+  function _bindModeToggle() {
+    const cosmicBtn = document.getElementById('btn-mode-cosmic');
+    const atomicBtn = document.getElementById('btn-mode-atomic');
+
+    cosmicBtn.addEventListener('click', () => {
+      if (Simulation.mode === 'COSMIC') return;
+      Simulation.mode = 'COSMIC';
+      cosmicBtn.classList.add('active');
+      atomicBtn.classList.remove('active');
+      _updateUIMode();
+    });
+
+    atomicBtn.addEventListener('click', () => {
+      if (Simulation.mode === 'ATOMIC') return;
+      Simulation.mode = 'ATOMIC';
+      atomicBtn.classList.add('active');
+      cosmicBtn.classList.remove('active');
+      _updateUIMode();
+    });
+  }
+
+  function _updateUIMode() {
+    _rebuildScenarioDropdown();
+    const defaultScenario = Simulation.mode === 'ATOMIC' ? 'hydrogen' : 'solarSystem';
+    _loadScenario(defaultScenario);
+    
+    const typeEl = document.getElementById('add-type');
+    _buildTypeOptions(typeEl);
+    typeEl.dispatchEvent(new Event('change'));
+
+    _deselectBody();
+  }
+
+  function _bindGlobalSettings() {
+    const slideTemp = document.getElementById('slide-temp');
+    const dispTemp = document.getElementById('disp-temp');
+    slideTemp?.addEventListener('input', (e) => {
+      const T = parseFloat(e.target.value);
+      Simulation.temperature = T;
+      dispTemp.textContent = T === 0 ? '0 K (Cero Absoluto)' : T.toFixed(0) + ' K (Equiv)';
+    });
+
+    const slideCoulomb = document.getElementById('slide-coulomb');
+    const dispCoulomb = document.getElementById('disp-coulomb');
+    slideCoulomb?.addEventListener('input', (e) => {
+      const k = parseFloat(e.target.value);
+      Simulation.coulombK = k;
+      dispCoulomb.textContent = k.toFixed(1) + ' (Const. Coulomb)';
+    });
+
+    const slideStrong = document.getElementById('slide-strong');
+    const dispStrong = document.getElementById('disp-strong');
+    slideStrong?.addEventListener('input', (e) => {
+      const k = parseFloat(e.target.value);
+      Simulation.strongK = k;
+      dispStrong.textContent = k.toFixed(1) + ' (Const. Fuerza Fuerte)';
+    });
+
+    const slideGamma = document.getElementById('slide-gamma');
+    const dispGamma = document.getElementById('disp-gamma');
+    slideGamma?.addEventListener('input', (e) => {
+      const g = parseFloat(e.target.value);
+      Simulation.langevinGamma = g;
+      dispGamma.textContent = g.toFixed(2) + ' (Damping)';
+    });
+
+    document.getElementById('btn-thermal-kick')?.addEventListener('click', () => {
+      const kick = 15.0; // velocity amplitude
+      for (const b of Simulation.bodies) {
+        if (!b.isAlive) continue;
+        const angle = Math.random() * Math.PI * 2;
+        // thermal agitation is inversely proportional to square root of mass
+        b.vx += Math.cos(angle) * kick / Math.sqrt(b.mass);
+        b.vy += Math.sin(angle) * kick / Math.sqrt(b.mass);
+      }
+    });
+  }
+
+  function _showGlobalSettings() {
+    document.getElementById('prop-body-selected').classList.add('hidden');
+    document.getElementById('prop-body-global').classList.remove('hidden');
+
+    const panel = document.getElementById('prop-panel');
+    panel.classList.remove('hidden');
+    
+    document.getElementById('prop-panel-title').textContent = 'Configuración';
+
+    if (Simulation.mode === 'ATOMIC') {
+      document.getElementById('settings-cosmic').classList.add('hidden');
+      document.getElementById('settings-atomic').classList.remove('hidden');
+
+      // Sync slide values
+      const tempSlider = document.getElementById('slide-temp');
+      const coulombSlider = document.getElementById('slide-coulomb');
+      const strongSlider = document.getElementById('slide-strong');
+      const gammaSlider = document.getElementById('slide-gamma');
+
+      if (tempSlider) tempSlider.value = Simulation.temperature;
+      document.getElementById('disp-temp').textContent = Simulation.temperature === 0 ? '0 K (Cero Absoluto)' : Simulation.temperature.toFixed(0) + ' K (Equiv)';
+      
+      if (coulombSlider) coulombSlider.value = Simulation.coulombK;
+      document.getElementById('disp-coulomb').textContent = Simulation.coulombK.toFixed(1) + ' (Const. Coulomb)';
+      
+      if (strongSlider) strongSlider.value = Simulation.strongK;
+      document.getElementById('disp-strong').textContent = Simulation.strongK.toFixed(1) + ' (Const. Fuerza Fuerte)';
+      
+      if (gammaSlider) gammaSlider.value = Simulation.langevinGamma;
+      document.getElementById('disp-gamma').textContent = Simulation.langevinGamma.toFixed(2) + ' (Damping)';
+    } else {
+      document.getElementById('settings-cosmic').classList.remove('hidden');
+      document.getElementById('settings-atomic').classList.add('hidden');
+    }
+  }
+
   // ── HUD update ────────────────────────────────────────────
 
   function updateHUD() {
     document.getElementById('sim-time').textContent  = Simulation.formattedSimTime();
-    document.getElementById('body-count').textContent = Simulation.bodies.filter(b => b.isAlive).length + ' objetos';
+    
+    const countLabel = Simulation.mode === 'ATOMIC' ? ' partículas' : ' objetos';
+    document.getElementById('body-count').textContent = Simulation.bodies.filter(b => b.isAlive).length + countLabel;
 
     // Update property panel live stats
     if (_selectedBodyId !== null) {

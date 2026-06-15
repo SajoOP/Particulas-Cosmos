@@ -67,13 +67,38 @@ const Physics = (() => {
     }
 
     // Recompute accelerations at new positions
-    computeAccelerations(bodies);
+    if (window.Simulation && window.Simulation.mode === 'ATOMIC') {
+      computeAtomicAccelerations(bodies, window.Simulation.coulombK, window.Simulation.strongK, window.Simulation.strongRange);
+    } else {
+      computeAccelerations(bodies);
+    }
 
     // Update velocities
+    const temp = (window.Simulation && window.Simulation.mode === 'ATOMIC') ? window.Simulation.temperature : 0.0;
+    const gamma = (window.Simulation && window.Simulation.mode === 'ATOMIC') ? window.Simulation.langevinGamma : 0.2;
+
     for (let i = 0; i < n; i++) {
       const b = bodies[i];
       b.vx += 0.5 * (ax0[i] + b.ax) * dt;
       b.vy += 0.5 * (ay0[i] + b.ay) * dt;
+
+      // Langevin thermostat for atomic simulation
+      if (window.Simulation && window.Simulation.mode === 'ATOMIC') {
+        // Continuous damping
+        b.vx *= (1.0 - gamma * dt);
+        b.vy *= (1.0 - gamma * dt);
+
+        if (temp > 0.0) {
+          const sigma = Math.sqrt(2.0 * gamma * temp * dt / b.mass);
+          // Box-Muller transform for white noise
+          const u1 = Math.random() || 1e-9;
+          const u2 = Math.random() || 1e-9;
+          const g1 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+          const g2 = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
+          b.vx += g1 * sigma;
+          b.vy += g2 * sigma;
+        }
+      }
     }
   }
 
@@ -84,6 +109,10 @@ const Physics = (() => {
    * @returns {{ i, j }[]}
    */
   function detectCollisions(bodies, pixelsPerAU) {
+    if (window.Simulation && window.Simulation.mode === 'ATOMIC') {
+      return []; // Disable collisions/merges in atomic simulation mode
+    }
+
     const pairs = [];
     const n = bodies.length;
     for (let i = 0; i < n; i++) {
@@ -174,5 +203,60 @@ const Physics = (() => {
     return K + U;
   }
 
-  return { computeAccelerations, integrateStep, detectCollisions, mergeBodies, totalEnergy };
+  /**
+   * Compute atomic & subatomic forces (Coulomb and Strong nuclear)
+   */
+  function computeAtomicAccelerations(bodies, ke, strongK, strongRange) {
+    const eps2 = 0.1; // Coulomb softening
+    const n = bodies.length;
+
+    // Reset accelerations
+    for (let i = 0; i < n; i++) {
+      bodies[i].ax = 0;
+      bodies[i].ay = 0;
+    }
+
+    const isNucleonOrQuark = (b) => 
+      ['PROTON', 'NEUTRON', 'QUARK_UP', 'QUARK_DOWN'].includes(b.type);
+
+    for (let i = 0; i < n; i++) {
+      const bi = bodies[i];
+      for (let j = i + 1; j < n; j++) {
+        const bj = bodies[j];
+
+        const dx = bj.x - bi.x;
+        const dy = bj.y - bi.y;
+        const r2 = dx * dx + dy * dy;
+        const r  = Math.sqrt(r2);
+
+        // 1. Electromagnetic Force (Coulomb)
+        if (bi.charge !== 0 && bj.charge !== 0) {
+          const r2_soft = r2 + eps2;
+          const r3_soft = r2_soft * Math.sqrt(r2_soft);
+          const F_c = ke * (bi.charge * bj.charge) / r3_soft;
+          
+          bi.ax -= F_c * dx / bi.mass;
+          bi.ay -= F_c * dy / bi.mass;
+          bj.ax += F_c * dx / bj.mass;
+          bj.ay += F_c * dy / bj.mass;
+        }
+
+        // 2. Strong Nuclear Force
+        if (isNucleonOrQuark(bi) && isNucleonOrQuark(bj)) {
+          // Combined Yukawa attraction and short-range hard-core repulsion
+          const factor = strongK * (
+            0.8 / Math.pow(r2 + 0.15, 4) - 
+            Math.exp(-r / strongRange) / Math.pow(r2 + 0.15, 1.5)
+          );
+
+          bi.ax -= factor * dx / bi.mass;
+          bi.ay -= factor * dy / bi.mass;
+          bj.ax += factor * dx / bj.mass;
+          bj.ay += factor * dy / bj.mass;
+        }
+      }
+    }
+  }
+
+  return { computeAccelerations, integrateStep, detectCollisions, mergeBodies, totalEnergy, computeAtomicAccelerations };
 })();

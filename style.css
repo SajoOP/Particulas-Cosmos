@@ -602,3 +602,75 @@ kbd {
 
 /* ── Transitions ──────────────────────────────────────────── */
 #prop-panel { transition: opacity 0.2s, transform 0.25s; }
+
+/* ── Mode Toggle ──────────────────────────────────────────── */
+.mode-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.mode-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+}
+.mode-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ── Form Range Slider ──────────────────────────────────────── */
+.form-range {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+  margin: 6px 0;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  border: none;
+  transition: transform 0.1s;
+}
+.form-range::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+.form-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  border: none;
+  transition: transform 0.1s;
+}
+.form-range::-moz-range-thumb:hover {
+  transform: scale(1.25);
+}
+

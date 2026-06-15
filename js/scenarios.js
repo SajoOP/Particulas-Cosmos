@@ -601,8 +601,131 @@ const Scenarios = {
       return list;
     },
   },
+  // ── Átomo de Hidrógeno ──────────────────────────────────────
+  hydrogen: {
+    name: 'Átomo de Hidrógeno',
+    description: 'Un protón en el centro y un electrón orbitando a alta velocidad.',
+    mode: 'ATOMIC',
+    timeScale: 0.02,
+    zoom: 1500,
+    coulombK: 10.0,
+    strongK: 40.0,
+    strongRange: 2.0,
+    temperature: 0.0,
+    bodies: () => [
+      new CelestialBody({ name: 'Protón', type: 'PROTON', mass: 1.0, charge: 1.0, x: 0, y: 0, vx: 0, vy: 0 }),
+      new CelestialBody({ name: 'Electrón', type: 'ELECTRON', mass: 0.00054, charge: -1.0, x: 0, y: 5.0, vx: -60.8, vy: 0 })
+    ]
+  },
 
-  // ── Empty ────────────────────────────────────────────────────
+  // ── Átomo de Helio ──────────────────────────────────────────
+  helium: {
+    name: 'Átomo de Helio',
+    description: 'Un núcleo estable de 2 protones y 2 neutrones orbitado por 2 electrones.',
+    mode: 'ATOMIC',
+    timeScale: 0.02,
+    zoom: 1200,
+    coulombK: 10.0,
+    strongK: 40.0,
+    strongRange: 2.0,
+    temperature: 0.0,
+    bodies: () => [
+      new CelestialBody({ name: 'P1', type: 'PROTON', mass: 1.0, charge: 1.0, x: -0.4, y: 0.4 }),
+      new CelestialBody({ name: 'P2', type: 'PROTON', mass: 1.0, charge: 1.0, x: 0.4, y: -0.4 }),
+      new CelestialBody({ name: 'N1', type: 'NEUTRON', mass: 1.0, charge: 0.0, x: 0.4, y: 0.4 }),
+      new CelestialBody({ name: 'N2', type: 'NEUTRON', mass: 1.0, charge: 0.0, x: -0.4, y: -0.4 }),
+      new CelestialBody({ name: 'e1', type: 'ELECTRON', mass: 0.00054, charge: -1.0, x: 0, y: 6.0, vx: -78.6, vy: 0 }),
+      new CelestialBody({ name: 'e2', type: 'ELECTRON', mass: 0.00054, charge: -1.0, x: 0, y: -7.0, vx: 72.8, vy: 0 })
+    ]
+  },
+
+  // ── Molécula de Hidrógeno ───────────────────────────────────
+  hydrogenMolecule: {
+    name: 'Molécula de Hidrógeno (H₂)',
+    description: 'Enlace covalente: dos protones comparten dos electrones en órbitas cruzadas.',
+    mode: 'ATOMIC',
+    timeScale: 0.02,
+    zoom: 1000,
+    coulombK: 10.0,
+    strongK: 40.0,
+    strongRange: 2.0,
+    temperature: 0.0,
+    bodies: () => [
+      new CelestialBody({ name: 'Protón A', type: 'PROTON', mass: 1.0, charge: 1.0, x: -4.0, y: 0 }),
+      new CelestialBody({ name: 'Protón B', type: 'PROTON', mass: 1.0, charge: 1.0, x: 4.0, y: 0 }),
+      new CelestialBody({ name: 'Electrón 1', type: 'ELECTRON', mass: 0.00054, charge: -1.0, x: 0, y: 3.5, vx: -18.0, vy: 0 }),
+      new CelestialBody({ name: 'Electrón 2', type: 'ELECTRON', mass: 0.00054, charge: -1.0, x: 0, y: -3.5, vx: 18.0, vy: 0 })
+    ]
+  },
+
+  // ── Fusión Nuclear ──────────────────────────────────────────
+  nuclearFusion: {
+    name: 'Fusión Nuclear (D + T)',
+    description: 'Colisión a alta velocidad de Deuterio y Tritio para vencer la barrera de Coulomb y fusionarse.',
+    mode: 'ATOMIC',
+    timeScale: 0.02,
+    zoom: 600,
+    coulombK: 8.0,
+    strongK: 45.0,
+    strongRange: 2.5,
+    temperature: 1.0,
+    bodies: () => [
+      new CelestialBody({ name: 'P (Deuterio)', type: 'PROTON', mass: 1.0, charge: 1.0, x: -16.0, y: -0.2, vx: 65.0, vy: 0 }),
+      new CelestialBody({ name: 'N (Deuterio)', type: 'NEUTRON', mass: 1.0, charge: 0.0, x: -17.0, y: 0.2, vx: 65.0, vy: 0 }),
+      new CelestialBody({ name: 'P (Tritio)', type: 'PROTON', mass: 1.0, charge: 1.0, x: 16.0, y: 0.2, vx: -65.0, vy: 0 }),
+      new CelestialBody({ name: 'N1 (Tritio)', type: 'NEUTRON', mass: 1.0, charge: 0.0, x: 17.2, y: -0.3, vx: -65.0, vy: 0 }),
+      new CelestialBody({ name: 'N2 (Tritio)', type: 'NEUTRON', mass: 1.0, charge: 0.0, x: 17.5, y: 0.4, vx: -65.0, vy: 0 })
+    ]
+  },
+
+  // ── Plasma de Quarks-Gluones ─────────────────────────────────
+  quarkPlasma: {
+    name: 'Plasma de Quarks',
+    description: 'Una sopa caótica hipercaliente de quarks Up y Down moviéndose libremente.',
+    mode: 'ATOMIC',
+    timeScale: 0.05,
+    zoom: 800,
+    coulombK: 10.0,
+    strongK: 35.0,
+    strongRange: 3.0,
+    temperature: 45.0,
+    bodies: () => {
+      const list = [];
+      for (let i = 0; i < 12; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * 8.0;
+        const speed = 10.0 + Math.random() * 20.0;
+        list.push(new CelestialBody({
+          name: `Quark Up`, type: 'QUARK_UP', mass: 0.002, charge: 0.667,
+          x: r * Math.cos(angle), y: r * Math.sin(angle),
+          vx: -speed * Math.sin(angle), vy: speed * Math.cos(angle)
+        }));
+      }
+      for (let i = 0; i < 12; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * 8.0;
+        const speed = 10.0 + Math.random() * 20.0;
+        list.push(new CelestialBody({
+          name: `Quark Down`, type: 'QUARK_DOWN', mass: 0.005, charge: -0.333,
+          x: r * Math.cos(angle), y: r * Math.sin(angle),
+          vx: -speed * Math.sin(angle), vy: speed * Math.cos(angle)
+        }));
+      }
+      for (let i = 0; i < 6; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * 8.0;
+        const speed = 40.0 + Math.random() * 30.0;
+        list.push(new CelestialBody({
+          name: `Neutrino`, type: 'NEUTRINO', mass: 1e-6, charge: 0.0,
+          x: r * Math.cos(angle), y: r * Math.sin(angle),
+          vx: -speed * Math.sin(angle), vy: speed * Math.cos(angle)
+        }));
+      }
+      return list;
+    }
+  },
+
+  // ── Espacio Vacío ────────────────────────────────────────────
   empty: {
     name: 'Espacio Vacío',
     description: 'Canvas en blanco. Agrega tus propios objetos.',
@@ -612,8 +735,8 @@ const Scenarios = {
   },
 };
 
-// Ordered list for UI
-const SCENARIO_LIST = [
+// Scenario Lists for Cosmic and Atomic modes
+const COSMIC_SCENARIOS = [
   'solarSystem',
   'earthMoon',
   'binaryStars',
@@ -625,5 +748,14 @@ const SCENARIO_LIST = [
   'rogueStar',
   'galaxyCollision',
   'hereYouAre',
-  'empty',
+  'empty'
+];
+
+const ATOMIC_SCENARIOS = [
+  'hydrogen',
+  'helium',
+  'hydrogenMolecule',
+  'nuclearFusion',
+  'quarkPlasma',
+  'empty'
 ];

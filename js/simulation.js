@@ -11,6 +11,14 @@ const Simulation = (() => {
   let _onBodyChange  = null;        // callback when bodies list changes
   let _mergeDelay    = 0.8;         // seconds of explosion before merge
   let _currentScenarioKey = 'solarSystem';
+  
+  // Dual mode parameters
+  let mode          = 'COSMIC';     // 'COSMIC' | 'ATOMIC'
+  let coulombK      = 10.0;
+  let strongK       = 40.0;
+  let strongRange   = 2.0;
+  let temperature   = 0.0;
+  let langevinGamma = 0.2;
 
   const FIXED_DT_REAL = 1 / 60;    // physics step in real seconds
   const MAX_SUBSTEPS   = 20;
@@ -21,19 +29,35 @@ const Simulation = (() => {
     const s = Scenarios[key];
     if (!s) return;
     _currentScenarioKey = key;
+    
+    // Automatically switch mode based on scenario config
+    mode = s.mode || 'COSMIC';
+    if (mode === 'ATOMIC') {
+      coulombK      = s.coulombK !== undefined ? s.coulombK : ATOMIC_DEFAULTS.coulombK;
+      strongK       = s.strongK !== undefined ? s.strongK : ATOMIC_DEFAULTS.strongK;
+      strongRange   = s.strongRange !== undefined ? s.strongRange : ATOMIC_DEFAULTS.strongRange;
+      temperature   = s.temperature !== undefined ? s.temperature : ATOMIC_DEFAULTS.temperature;
+      langevinGamma = s.langevinGamma !== undefined ? s.langevinGamma : ATOMIC_DEFAULTS.langevinGamma;
+    }
+
     bodies = s.bodies();
     timeScale = s.timeScale;
     simTime = 0;
     paused = false;
     _pendingMerges = [];
     Camera.fitAll(bodies);
-    // Camera.setZoom(s.zoom); // Let fitAll determine the optimal initial zoom instead
     Camera.centerOn(
       bodies.reduce((s, b) => s + b.x, 0) / (bodies.length || 1),
       bodies.reduce((s, b) => s + b.y, 0) / (bodies.length || 1),
     );
     // Init accelerations
-    if (bodies.length > 1) Physics.computeAccelerations(bodies);
+    if (bodies.length > 1) {
+      if (mode === 'ATOMIC') {
+        Physics.computeAtomicAccelerations(bodies, coulombK, strongK, strongRange);
+      } else {
+        Physics.computeAccelerations(bodies);
+      }
+    }
     _onBodyChange?.();
     return s;
   }
@@ -136,7 +160,11 @@ const Simulation = (() => {
 
     const b = new CelestialBody(opts);
     bodies.push(b);
-    Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    if (mode === 'ATOMIC') {
+      Physics.computeAtomicAccelerations(bodies.filter(b => b.isAlive), coulombK, strongK, strongRange);
+    } else {
+      Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    }
     _onBodyChange?.();
     return b;
   }
@@ -144,7 +172,11 @@ const Simulation = (() => {
   function removeBody(id) {
     const idx = bodies.findIndex(b => b.id === id);
     if (idx !== -1) bodies.splice(idx, 1);
-    Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    if (mode === 'ATOMIC') {
+      Physics.computeAtomicAccelerations(bodies.filter(b => b.isAlive), coulombK, strongK, strongRange);
+    } else {
+      Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    }
     _onBodyChange?.();
   }
 
@@ -157,8 +189,14 @@ const Simulation = (() => {
     if (opts.color  !== undefined) b.color = opts.color;
     if (opts.vx     !== undefined) b.vx    = parseFloat(opts.vx);
     if (opts.vy     !== undefined) b.vy    = parseFloat(opts.vy);
+    if (opts.charge !== undefined) b.charge = parseFloat(opts.charge);
     b.refresh();
-    Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    
+    if (mode === 'ATOMIC') {
+      Physics.computeAtomicAccelerations(bodies.filter(b => b.isAlive), coulombK, strongK, strongRange);
+    } else {
+      Physics.computeAccelerations(bodies.filter(b => b.isAlive));
+    }
     _onBodyChange?.();
     return b;
   }
@@ -193,6 +231,20 @@ const Simulation = (() => {
     play, pause, togglePause, isPaused,
     setTimeScale, getTimeScale, getSimTime, formattedSimTime,
     onBodyChange,
+    
+    // Mode properties
+    get mode() { return mode; },
+    set mode(v) { mode = v; },
+    get coulombK() { return coulombK; },
+    set coulombK(v) { coulombK = v; },
+    get strongK() { return strongK; },
+    set strongK(v) { strongK = v; },
+    get strongRange() { return strongRange; },
+    set strongRange(v) { strongRange = v; },
+    get temperature() { return temperature; },
+    set temperature(v) { temperature = v; },
+    get langevinGamma() { return langevinGamma; },
+    set langevinGamma(v) { langevinGamma = v; }
   };
 })();
 

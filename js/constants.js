@@ -73,3 +73,23 @@ const TIME_SCALES = [
   { label: '100 años/seg',value: 86400 * 365.25 * 100 },
   { label: '1000 años/seg',value: 86400 * 365.25 * 1000 },
 ];
+
+// Atomic / Subatomic particle types (microcosmos)
+const ATOMIC_BODY_TYPES = {
+  PROTON:       { label: 'Protón',      mass: 1.0,      charge: 1.0,  color: 0xFF5533, glow: true  },
+  NEUTRON:      { label: 'Neutrón',     mass: 1.0,      charge: 0.0,  color: 0x8899A6, glow: false },
+  ELECTRON:     { label: 'Electrón',    mass: 0.00054,  charge: -1.0, color: 0x33FF55, glow: true  },
+  QUARK_UP:     { label: 'Quark Up',    mass: 0.002,    charge: 0.667,color: 0xFF33CC, glow: false },
+  QUARK_DOWN:   { label: 'Quark Down',  mass: 0.005,    charge: -0.333,color: 0x9933FF, glow: false },
+  NEUTRINO:     { label: 'Neutrino',    mass: 1e-6,     charge: 0.0,  color: 0xFFFFFF, glow: false }
+};
+
+// Default constants for atomic simulation
+const ATOMIC_DEFAULTS = {
+  coulombK: 10.0,
+  strongK: 40.0,
+  strongRange: 2.0,
+  temperature: 0.0,
+  langevinGamma: 0.2,
+};
+

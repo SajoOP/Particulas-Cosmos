@@ -28,7 +28,9 @@ class CelestialBody {
     this.ax   = 0;
     this.ay   = 0;
     this.color = opts.color !== undefined ? opts.color
-               : (BODY_COLORS[this.type] || [0xFFFFFF])[0];
+               : (BODY_COLORS[this.type] || (ATOMIC_BODY_TYPES[this.type] ? [ATOMIC_BODY_TYPES[this.type].color] : [0xFFFFFF]))[0];
+    this.charge = opts.charge !== undefined ? opts.charge
+                : (ATOMIC_BODY_TYPES[this.type]?.charge ?? 0.0);
 
     // Trail (array of {x,y} positions)
     this.trail = [];
@@ -45,6 +47,12 @@ class CelestialBody {
   }
 
   getVisualRadius(zoom) {
+    if (typeof ATOMIC_BODY_TYPES !== 'undefined' && ATOMIC_BODY_TYPES[this.type]) {
+      const baseRadius = { PROTON: 11, NEUTRON: 11, ELECTRON: 6, QUARK_UP: 4.5, QUARK_DOWN: 4.5, NEUTRINO: 3 }[this.type] || 6;
+      // Scale smoothly with zoom, but stay visible
+      return baseRadius * Math.max(0.1, Math.min(10.0, zoom / 100.0));
+    }
+
     // Physical radius in AU
     const physAU = this.type === 'BLACK_HOLE' ? 2e-8 * this.mass : 0.00465 * Math.pow(Math.max(this.mass, 1e-15), 0.333);
     const physPx = physAU * zoom;
@@ -77,6 +85,16 @@ class CelestialBody {
 
   /** Returns display info string */
   displayInfo() {
+    if (typeof ATOMIC_BODY_TYPES !== 'undefined' && ATOMIC_BODY_TYPES[this.type]) {
+      const massSun = this.mass.toFixed(5) + ' m_p';
+      const speedAUs = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      const speedKms = speedAUs.toFixed(3) + ' u/s';
+      const distAU   = Math.sqrt(this.x * this.x + this.y * this.y).toFixed(2) + ' u';
+      const chargeSign = this.charge > 0 ? '+' : '';
+      const chargeStr = chargeSign + this.charge.toFixed(2) + ' e';
+      return { massSun, speedKms, distAU, chargeStr };
+    }
+
     const massKg = (this.mass * MSUN).toExponential(2) + ' kg';
     const massSun = this.mass < 0.01
       ? (this.mass * MSUN / 5.972e24).toFixed(3) + ' M⊕'

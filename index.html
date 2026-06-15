@@ -35,6 +35,12 @@
       </div>
     </div>
 
+    <!-- Cosmic / Atomic simulation scale toggle -->
+    <div class="mode-toggle">
+      <button id="btn-mode-cosmic" class="mode-btn active" title="Escala Macroscópica (Espacial)">🪐 Espacio</button>
+      <button id="btn-mode-atomic" class="mode-btn" title="Escala Microscópica (Atómica)">⚛️ Átomo</button>
+    </div>
+
     <div class="topbar-divider"></div>
 
     <!-- Scenario selector dropdown -->
@@ -90,14 +96,15 @@
   <!-- CENTER — canvas passthrough (no UI here) -->
   <main style="grid-area:canvas; pointer-events:none;"></main>
 
-  <!-- RIGHT PANEL — Body Properties -->
+  <!-- RIGHT PANEL — Properties and Global Settings -->
   <aside id="prop-panel" class="hidden">
     <div class="prop-header">
-      <h3>Propiedades</h3>
+      <h3 id="prop-panel-title">Propiedades</h3>
       <button class="icon-btn" id="prop-close" title="Cerrar">✕</button>
     </div>
-    <div class="prop-body">
 
+    <!-- PANEL BODY 1: SELECTED CELestial BODY PROPERTIES -->
+    <div id="prop-body-selected" class="prop-body">
       <!-- Live stats -->
       <div class="prop-stats">
         <div class="stat-card">
@@ -105,7 +112,7 @@
           <div class="stat-value" id="prop-speed">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Distancia al origen</div>
+          <div class="stat-label">Distancia</div>
           <div class="stat-value" id="prop-dist">—</div>
         </div>
       </div>
@@ -120,13 +127,7 @@
         <div class="form-row">
           <label for="prop-type">Tipo</label>
           <select class="form-select" id="prop-type">
-            <option value="STAR">Estrella</option>
-            <option value="PLANET">Planeta</option>
-            <option value="GAS_GIANT">Gigante Gaseoso</option>
-            <option value="MOON">Luna</option>
-            <option value="ASTEROID">Asteroide</option>
-            <option value="BLACK_HOLE">Agujero Negro</option>
-            <option value="NEUTRON_STAR">Estrella de Neutrones</option>
+            <!-- Will be dynamically populated for Cosmic or Atomic mode -->
           </select>
         </div>
       </div>
@@ -135,17 +136,22 @@
       <div class="prop-section">
         <div class="prop-section-label">Física</div>
         <div class="form-row">
-          <label for="prop-mass">Masa (M☉)</label>
+          <label for="prop-mass" id="label-prop-mass">Masa (M☉)</label>
           <input class="form-input" id="prop-mass" type="number" step="any" />
           <div class="mass-display" id="prop-mass-display">—</div>
         </div>
+        <div class="form-row" id="prop-charge-row">
+          <label for="prop-charge">Carga Eléctrica (e)</label>
+          <input class="form-input" id="prop-charge" type="number" step="any" />
+          <div class="mass-display" id="prop-charge-display">—</div>
+        </div>
         <div class="form-row-2col">
           <div class="form-row">
-            <label for="prop-vx">Vel. X (AU/s)</label>
+            <label for="prop-vx">Vel. X</label>
             <input class="form-input" id="prop-vx" type="number" step="any" />
           </div>
           <div class="form-row">
-            <label for="prop-vy">Vel. Y (AU/s)</label>
+            <label for="prop-vy">Vel. Y</label>
             <input class="form-input" id="prop-vy" type="number" step="any" />
           </div>
         </div>
@@ -165,7 +171,54 @@
         <button class="btn btn-primary" id="prop-apply">Aplicar Cambios</button>
         <button class="btn btn-secondary" id="prop-follow">📍 Seguir</button>
       </div>
+    </div>
 
+    <!-- PANEL BODY 2: GLOBAL SIMULATION CONFIGURATION -->
+    <div id="prop-body-global" class="prop-body hidden">
+      <!-- Cosmic Settings -->
+      <div id="settings-cosmic" class="prop-section">
+        <div class="prop-section-label">Configuración del Cosmos</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">
+          En esta escala rigen las leyes de la gravedad universal de Newton y la inercia espacial.
+        </div>
+        <div class="form-row">
+          <label>Efectos Visuales</label>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.4;">
+            Usa los controles superiores para activar trayectorias, etiquetas y vectores de velocidad. Pulsa "Encuadrar" para centrar la cámara.
+          </div>
+        </div>
+      </div>
+
+      <!-- Atomic Settings -->
+      <div id="settings-atomic" class="prop-section hidden">
+        <div class="prop-section-label">Física Atómica y Termodinámica</div>
+        
+        <div class="form-row">
+          <label for="slide-temp">Temperatura (Agitación Térmica)</label>
+          <input type="range" class="form-range" id="slide-temp" min="0" max="100" step="1" value="0" />
+          <div class="mass-display" id="disp-temp">0 K (Cero Absoluto)</div>
+        </div>
+
+        <div class="form-row">
+          <label for="slide-coulomb">Fuerza Electromagnética (Coulomb)</label>
+          <input type="range" class="form-range" id="slide-coulomb" min="0" max="50" step="0.5" value="10" />
+          <div class="mass-display" id="disp-coulomb">10.0 (Atracción/Repulsión)</div>
+        </div>
+
+        <div class="form-row">
+          <label for="slide-strong">Fuerza Nuclear Fuerte</label>
+          <input type="range" class="form-range" id="slide-strong" min="0" max="150" step="1" value="40" />
+          <div class="mass-display" id="disp-strong">40.0 (Enlace del Núcleo)</div>
+        </div>
+
+        <div class="form-row">
+          <label for="slide-gamma">Coeficiente de Damping (Fricción)</label>
+          <input type="range" class="form-range" id="slide-gamma" min="0" max="1.0" step="0.05" value="0.2" />
+          <div class="mass-display" id="disp-gamma">0.20 (Disipación)</div>
+        </div>
+
+        <button class="btn btn-secondary" id="btn-thermal-kick" style="margin-top:10px;">⚡ Impulso Térmico</button>
+      </div>
     </div>
   </aside>
 
