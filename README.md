@@ -2,7 +2,7 @@
 
 
 ## Autores:
-**Juan Manuel Cristancho Alvarez**
+**Juan Manuel Cristancho Alvarez**,
 **José David Múñoz Dueñas**
 
 
@@ -13,7 +13,7 @@
   <img src="assets/partcosmos.png" alt="Partículas Cosmos" width="400" />
 </div>
 
-**Partículas & Cosmos** es un simulador físico interactivo en 2D que permite explorar la dinámica de sistemas de partículas a dos escalas extremas: la escala cósmica (cuerpos celestes, gravedad) y la escala atómica (partículas subatómicas, fuerzas nucleares y electromagnéticas).
+**Partículas y Cosmos** es un simulador físico interactivo en 2D que permite explorar la dinámica de sistemas de partículas a dos escalas extremas: la escala cósmica (cuerpos celestes, gravedad) y la escala atómica (partículas subatómicas, fuerzas nucleares y electromagnéticas).
 
 ## ¿Cómo funciona el programa?
 
