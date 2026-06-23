@@ -1,12 +1,19 @@
 # Partículas Cosmos
 
+
+## Autores:
+**Juan Manuel Cristancho Alvarez**
+**José David Múñoz Dueñas**
+
+
+
+
 <div align="center">
   <img src="assets/logo.png" alt="Logo" width="200" />
-  <img src="assets/imagotipo.png" alt="Imagotipo" width="200" />
-  <img src="assets/partcosmos.png" alt="Partículas Cosmos" width="400" />
+ 
 </div>
 
-**Partículas Cosmos** es un simulador físico interactivo en 2D que permite explorar la dinámica de sistemas de partículas a dos escalas extremas: la escala cósmica (cuerpos celestes, gravedad) y la escala atómica (partículas subatómicas, fuerzas nucleares y electromagnéticas).
+**Partículas & Cosmos** es un simulador físico interactivo en 2D que permite explorar la dinámica de sistemas de partículas a dos escalas extremas: la escala cósmica (cuerpos celestes, gravedad) y la escala atómica (partículas subatómicas, fuerzas nucleares y electromagnéticas).
 
 ## ¿Cómo funciona el programa?
 
@@ -64,3 +71,4 @@ En el modo Atómico, observamos protones, neutrones, electrones y quarks. Aquí 
 1. Descarga el repositorio o clónalo localmente.
 2. Abre el archivo `index.html` en cualquier navegador web moderno. ¡No requiere instalación de servidores ni dependencias extras!
 3. Usa los paneles de control para cambiar de escenario, ajustar parámetros de físicas, ralentizar el tiempo o añadir cuerpos celestes/subatómicos manualmente con un click.
+
